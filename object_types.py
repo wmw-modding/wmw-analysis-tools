@@ -20,7 +20,9 @@ OBJECT_TYPES : dict[
         ]
     ]] = {}
 
-class Window(tk.Tk):
+
+
+class Objects_analysis_gui(tk.Tk):
     def __init__(self, master = None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.title('Find object properties')
@@ -280,7 +282,7 @@ class Window(tk.Tk):
         pass
     
 def main():
-    app = Window()
+    app = Objects_analysis_gui()
     app.mainloop()
 
 if __name__ == '__main__':
