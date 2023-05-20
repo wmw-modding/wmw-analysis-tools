@@ -1,0 +1,2 @@
+wmwpy@git+https://github.com/wmw-modding/wmwpy/
+tk==0.1.0

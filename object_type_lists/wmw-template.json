@@ -1,0 +1,242 @@
+{
+  "": {
+    "Interactive": {
+      "type": "bit",
+      "values": [
+        "1",
+        "0"
+      ]
+    },
+    "VelDamping": {
+      "type": "float",
+      "values": [
+        "0.99"
+      ]
+    },
+    "OmegaDamping": {
+      "type": "float",
+      "values": [
+        "0.99"
+      ]
+    },
+    "Draggable": {
+      "type": "bit",
+      "values": [
+        "1",
+        "0"
+      ]
+    },
+    "GravityScale": {
+      "type": "float",
+      "values": [
+        "0"
+      ]
+    },
+    "Parent": {
+      "type": "string",
+      "values": [
+        ""
+      ]
+    },
+    "PinOffset": {
+      "type": "float float",
+      "values": [
+        "0 0",
+        "none"
+      ]
+    },
+    "PinMinAngle": {
+      "type": "float",
+      "values": [
+        ""
+      ]
+    },
+    "PinMaxAngle": {
+      "type": "float",
+      "values": [
+        ""
+      ]
+    },
+    "PathPos#": {
+      "type": "float float ...",
+      "values": [
+        "0 0",
+        "0 0 5 5"
+      ]
+    },
+    "PathIsClosed": {
+      "type": "bit",
+      "values": [
+        "1",
+        "0"
+      ]
+    },
+    "PathIsGlobal": {
+      "type": "bit",
+      "values": [
+        "1",
+        "0"
+      ]
+    },
+    "MotorMoveSpeed": {
+      "type": "float",
+      "values": [
+        "1.0"
+      ]
+    },
+    "MotorMoveSpeed#": {
+      "type": "float",
+      "values": [
+        "1.0"
+      ]
+    },
+    "MotorWaitTime": {
+      "type": "float",
+      "values": [
+        "0.0"
+      ]
+    },
+    "MotorWaitTime#": {
+      "type": "float",
+      "values": [
+        "0.0"
+      ]
+    },
+    "MotorTurnSpeed": {
+      "type": "float",
+      "values": [
+        "0.0"
+      ]
+    },
+    "MotorTurnSpeed#": {
+      "type": "float",
+      "values": [
+        "0.0"
+      ]
+    },
+    "MotorWaitTurn": {
+      "type": "float",
+      "values": [
+        "0.0"
+      ]
+    },
+    "MotorWaitTurn#": {
+      "type": "float",
+      "values": [
+        "0.0"
+      ]
+    },
+    "MotorOn": {
+      "type": "bit",
+      "values": [
+        "1",
+        "0"
+      ]
+    },
+    "MotorPingPong": {
+      "type": "bit",
+      "values": [
+        "1",
+        "0"
+      ]
+    }
+  },
+  "spout": {
+    "SpoutType": {
+      "type": "string",
+      "values": [
+        "OpenSpout",
+        "Drain",
+        "DrainSpout",
+        "TouchSpout"
+      ]
+    },
+    "FluidType": {
+      "type": "string",
+      "values": [
+        "Lava",
+        "Water",
+        "Steam",
+        "ContaminatedWater"
+      ]
+    },
+    "ExpulsionAngle": {
+      "type": "float",
+      "values": [
+        "0.0"
+      ]
+    },
+    "ExpulsionAngleVariation": {
+      "type": "float",
+      "values": [
+        "0.0f"
+      ]
+    },
+    "ParticleSpeed": {
+      "type": "float",
+      "values": [
+        "0.0"
+      ]
+    },
+    "OffsetToMouth": {
+      "type": "float float",
+      "values": [
+        "0 0"
+      ]
+    },
+    "OffsetVariation": {
+      "type": "float",
+      "values": [
+        "0.0"
+      ]
+    },
+    "NumberParticles": {
+      "type": "int",
+      "values": [
+        "0"
+      ]
+    },
+    "Timer#": {
+      "type": "bit float",
+      "values": [
+        "0 3.0",
+        "1 2.0"
+      ]
+    },
+    "ParticlesPerSecond": {
+      "type": "float",
+      "values": [
+        "0.0"
+      ]
+    },
+    "Limit": {
+      "type": "int",
+      "values": [
+        "1"
+      ]
+    }
+  },
+  "bomb": {
+    "BlastRadius": {
+      "type": "float",
+      "values": [
+        "1.0"
+      ]
+    },
+    "BlastPower": {
+      "type": "float",
+      "values": [
+        "4000"
+      ]
+    }
+  },
+  "switch": {
+    "SwitchType": {
+      "type": "string",
+      "values": [
+        "Momentary",
+        "Flip"
+      ]
+    }
+  }
+}
