@@ -1,8 +1,59 @@
+
+import traceback
+import logging
 import os
+import sys
+import subprocess
+import io
+import platform
+from datetime import datetime
+import time
+
+def createLogger(type = 'file', filename = 'logs/log.log'):
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+    format = '[%(levelname)s] %(message)s'
+    datefmt = '%I:%M:%S %p'
+    level = logging.DEBUG
+
+    # filename = 'log.log'
+    
+    handlers = []
+
+    if type == 'file':
+        try:
+            os.mkdir('logs')
+        except:
+            pass
+        
+        handlers.append(logging.FileHandler(filename))
+        format = '[%(asctime)s] [%(levelname)s] %(message)s'
+
+        # logging.basicConfig(filename=filename, filemode='w', format=format, datefmt=datefmt, level=level)
+        # logger.info('logging file')
+    
+    handlers.append(logging.StreamHandler())
+    logging.basicConfig(format=format, datefmt=datefmt, level=level, handlers=handlers)
+    
+    logger = logging.getLogger(__name__)
+    logger.info(filename)
+
+
+_log_filename = f'logs/{datetime.now().strftime("%m-%d-%y_%H-%M-%S")}.log'
+
+createLogger('file', filename = _log_filename)
+
+def log_exception():
+    fileio = io.StringIO()
+    traceback.print_exc(file = fileio)
+
+    logging.error(fileio.getvalue())
+
 import typing
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
+import copy
 
 import wmwpy
 import json
@@ -20,7 +71,170 @@ OBJECT_TYPES : dict[
         ]
     ]] = {}
 
-
+class Object_Analysis():
+    def __init__(
+        self,
+        gamepath : str = '',
+        assets : str = '/assets',
+        game : str = 'WMW',
+        template : str = '',
+        output : str = 'objects_output.json',
+        load_callback : typing.Callable[[int, str, int], typing.Any] = None,
+        analysis_callback : typing.Callable[[int, str, int], typing.Any] = None,
+    ) -> None:
+        if gamepath in ['', None]:
+            raise TypeError('gamepath must be a path')
+        
+        self.load_callback = load_callback
+        self.anaysis_callback = analysis_callback
+        
+        self.game : wmwpy.Game = wmwpy.load(
+            gamepath = gamepath,
+            assets = assets,
+            game = game,
+            hook = self.load_callback
+        )
+        
+        self.template : dict[
+            str, dict[
+                str, dict[
+                    typing.Literal[
+                        'type',
+                        'values'
+                    ], typing.Literal['int', 'float', 'bool', 'bit', 'string'] | set[str]
+                ]
+            ]] = {}
+        self.output_path = output
+        
+        if template not in ['', None]:
+            if isinstance(template, str):
+                with open(template, 'r') as file:
+                    self.template = json.load(file)
+            else:
+                self.template = copy.deepcopy(template)
+        self.template = list_to_set(self.template)
+        
+        self.object_types : dict[
+            str, dict[
+                str, dict[
+                    typing.Literal[
+                        'type',
+                        'values'
+                    ], typing.Literal['int', 'float', 'bool', 'bit', 'string'] | set[str]
+                ]
+            ]] = copy.deepcopy(self.template)
+    
+    def start(
+        self,
+        anaysis_callback : typing.Callable[[int, str, int], typing.Any] = None,
+        load_callback : typing.Callable[[int, str, int], typing.Any] = None,
+    ):
+        if callable(anaysis_callback):
+            self.anaysis_callback = anaysis_callback
+        if callable(load_callback):
+            self.load_callback = load_callback
+        
+        start_time = time.time()
+        
+        level_files = self.game.filesystem.listdir(
+            recursive = True,
+            search = '*/Levels/*.xml'
+        )
+        object_files = self.game.filesystem.listdir(
+            recursive = True,
+            search = '*.hs'
+        )
+        finished_objects = set()
+        
+        self.object_types = copy.deepcopy(self.template)
+        
+        progress = 0
+        
+        logging.debug(level_files)
+        
+        for path in level_files:
+            if callable(self.anaysis_callback):
+                self.anaysis_callback(progress, path, len(level_files))
+            
+            level = self.game.Level(
+                path,
+                load_callback = self.load_callback,
+                ignore_errors = True,
+            )
+            
+            self.analyze_level(level)
+            level_objects = {obj.filename for obj in level.objects}
+            finished_objects.union(level_objects)
+            
+            progress += 1
+        
+        if callable(self.anaysis_callback):
+            self.anaysis_callback(progress, 'Levels finished', len(level_files))
+        
+        progress = 0
+        
+        object_files = [path for path in object_files if path not in finished_objects]
+        
+        for path in object_files:
+            
+            if callable(self.anaysis_callback):
+                self.anaysis_callback(progress, path, len(level_files))
+            
+            try:
+                obj = self.game.Object(
+                    path,
+                )
+                
+                self.analyze_object(obj)
+            except:
+                log_exception()
+            
+            progress += 1
+        
+        if callable(self.anaysis_callback):
+            self.anaysis_callback(progress, 'Don!', len(object_files))
+        
+        self.export_objects()
+        
+        end_time = time.time()
+        
+        logging.info(f'Took: {start_time - end_time} seconds')
+        
+    def analyze_level(self, level : wmwpy.classes.Level):
+        if not isinstance(level, wmwpy.classes.Level):
+            raise TypeError('level must be Level object')
+        
+        for obj in level.objects:
+            self.analyze_object(obj)
+    
+    def analyze_object(self, object : wmwpy.classes.Object):
+        if not object.type in self.object_types:
+            self.object_types[object.type] = {}
+        
+        for property in object.properties:
+            if property == 'Type':
+                continue
+            
+            if ('' in self.object_types) and (property in self.object_types['']):
+                self.object_types[''][property]['values'].add(object.properties[property])
+                continue
+            
+            if not property in self.object_types[object.type]:
+                self.object_types[object.type][property] = {
+                    'type' : 'any',
+                    'values' : set()
+                }
+            
+            self.object_types[object.type][property]['values'].add(object.properties[property])
+        
+    def export_objects(self, output = None):
+        if output not in ['', None] and isinstance(output, str):
+            self.output_path = output
+        
+        object_types = make_json_friendly(self.object_types)
+        
+        with open(self.output_path, 'w') as file:
+            json.dump(object_types, file, indent = 2)
 
 class Objects_analysis_gui(tk.Tk):
     def __init__(self, master = None, *args, **kwargs):
@@ -233,7 +447,7 @@ class Objects_analysis_gui(tk.Tk):
         self.progress_frame.columnconfigure(1, weight = 1, uniform = 'progress')
         self.progress_frame.pack(side = 'bottom', fill = 'both', )
         
-        self.progress_bars : dict[typing.Literal['full', 'loading'], dict[typing.Literal['progress', 'label', 'var'], ttk.Progressbar | ttk.Label | tk.StringVar]] = {
+        self.progress_bars : dict[typing.Literal['full', 'loading'], dict[typing.Literal['progress', 'label', 'var', 'callback'], ttk.Progressbar | ttk.Label | tk.StringVar]] = {
             'full' : {},
             'loading' : {},
         }
@@ -244,14 +458,15 @@ class Objects_analysis_gui(tk.Tk):
         ) -> dict[typing.Literal[
             'var',
             'progress',
-            'label'
+            'label',
+            'callback',
         ], tk.StringVar |
            ttk.Progressbar |
            ttk.Label]:
             
             var = tk.StringVar()
             
-            progress = ttk.Progressbar(
+            progress : ttk.Progressbar = ttk.Progressbar(
                 parent
             )
             progress.grid(row = row, column = 0, sticky = 'ew', padx = 4, pady = 2)
@@ -262,11 +477,18 @@ class Objects_analysis_gui(tk.Tk):
             )
             label.grid(row = row, column = 1, sticky = 'ew', padx = 4, pady = 2)
             
+            def callback(index, name, max):
+                progress['max'] = max
+                progress['value'] = index
+                var.set(name)
+                
+                self.update()
             
             return {
                 'var' : var,
                 'label' : label,
                 'progress' : progress,
+                'callback' : callback,
             }
             
         self.progress_bars['full'] = create_progress_bar(
@@ -277,9 +499,53 @@ class Objects_analysis_gui(tk.Tk):
             self.progress_frame,
             row = 1,
         )
+        
+    def set_state(
+        self,
+        state : typing.Literal['enabled', 'disabled'] = 'enabled',
+        widget : tk.Widget = None,
+    ):
+        if widget == None:
+            widget = self
+        
+        if len(widget.winfo_children()) < 1:
+            return
+        
+        for child in widget.winfo_children():
+            try:
+                child.configure(state = state)
+            except:
+                pass
+            # if isinstance(child, (tk.Frame, ttk.Frame)):
+            #     self.set_state(
+            #         state,
+            #         child,
+            #     )
 
     def start_analysis(self):
-        pass
+        self.set_state('disabled')
+        self.set_state('disabled', self.config_frame)
+        
+        try:
+            analysis = Object_Analysis(
+                self.settings.get('gamepath'),
+                self.settings.get('assets'),
+                self.settings.get('game'),
+                self.settings.get('template'),
+                self.settings.get('output'),
+                load_callback = self.progress_bars['loading']['callback'],
+                analysis_callback = self.progress_bars['full']['callback'],
+            )
+        except:
+            log_exception()
+        
+        try:
+            analysis.start()
+        except:
+            log_exception()
+        
+        self.set_state('enabled')
+        self.set_state('enabled', self.config_frame)
     
 def main():
     app = Objects_analysis_gui()
