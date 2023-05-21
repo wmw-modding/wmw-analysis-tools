@@ -198,7 +198,7 @@ class Object_Analysis():
         
         end_time = time.time()
         
-        logging.info(f'Took: {start_time - end_time} seconds')
+        logging.info(f'Took: {end_time - start_time} seconds')
         
     def analyze_level(self, level : wmwpy.classes.Level):
         if not isinstance(level, wmwpy.classes.Level):
