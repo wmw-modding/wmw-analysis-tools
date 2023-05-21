@@ -192,7 +192,7 @@ class Object_Analysis():
             progress += 1
         
         if callable(self.anaysis_callback):
-            self.anaysis_callback(progress, 'Don!', len(object_files))
+            self.anaysis_callback(progress, 'Done!', len(object_files))
         
         self.export_objects()
         
@@ -225,7 +225,7 @@ class Object_Analysis():
                     'values' : set()
                 }
             
-            self.object_types[object.type][property]['values'].add(object.properties[property])
+            self.object_types[object.type][property]['values'].add(str(object.properties[property]))
         
     def export_objects(self, output = None):
         if output not in ['', None] and isinstance(output, str):
