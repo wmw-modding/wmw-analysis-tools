@@ -41,8 +41,7 @@
     "PinOffset": {
       "type": "float float",
       "values": [
-        "0 0",
-        "none"
+        "0 0"
       ]
     },
     "PinMinAngle": {
@@ -58,10 +57,9 @@
       ]
     },
     "PathPos#": {
-      "type": "float float ...",
+      "type": "float float",
       "values": [
-        "0 0",
-        "0 0 5 5"
+        "0 0"
       ]
     },
     "PathIsClosed": {
