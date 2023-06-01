@@ -9,6 +9,8 @@ import platform
 from datetime import datetime
 import time
 
+import utils
+
 def createLogger(type = 'file', filename = 'logs/log.log'):
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
@@ -92,7 +94,7 @@ class Object_Analysis():
             gamepath = gamepath,
             assets = assets,
             game = game,
-            hook = self.load_callback
+            load_callback = self.load_callback
         )
         
         self.template : dict[
@@ -101,7 +103,7 @@ class Object_Analysis():
                     typing.Literal[
                         'type',
                         'values'
-                    ], typing.Literal['int', 'float', 'bool', 'bit', 'string'] | set[str]
+                    ], typing.Literal['int', 'float', 'bit', 'string'] | set[str]
                 ]
             ]] = {}
         self.output_path = output
@@ -194,6 +196,7 @@ class Object_Analysis():
         if callable(self.anaysis_callback):
             self.anaysis_callback(progress, 'Done!', len(object_files))
         
+        self.get_data_types()
         self.export_objects()
         
         end_time = time.time()
@@ -215,17 +218,104 @@ class Object_Analysis():
             if property == 'Type':
                 continue
             
-            if ('' in self.object_types) and (property in self.object_types['']):
-                self.object_types[''][property]['values'].add(object.properties[property])
+            new_property = self.check_property(property)
+            
+            if ('' in self.object_types) and (new_property in self.object_types['']):
+                self.object_types[''][new_property]['values'].add(object.properties[property])
                 continue
             
-            if not property in self.object_types[object.type]:
-                self.object_types[object.type][property] = {
+            if not new_property in self.object_types[object.type]:
+                self.object_types[object.type][new_property] = {
                     'type' : 'any',
                     'values' : set()
                 }
             
-            self.object_types[object.type][property]['values'].add(str(object.properties[property]))
+            self.object_types[object.type][new_property]['values'].add(str(object.properties[property]))
+    
+    def check_property(self, property):
+        split = utils.split_num(property)
+        
+        if split[0] == '':
+            return property
+        
+        if split[1].isnumeric():
+            return split[0] + '#'
+        
+        return property
+    
+    def get_data_types(self):
+        
+        progress = 0
+        length = len(self.object_types)
+        
+        for key in self.object_types:
+            if callable(self.anaysis_callback):
+                self.anaysis_callback(progress, key, length)
+            
+            type = self.object_types[key]
+            
+            type_progress = 0
+            for name in type:
+                if callable(self.load_callback):
+                    self.anaysis_callback(type_progress, key, len(type))
+                
+                property = type[name]
+                
+                property['type'] = self.check_data_type(property['values'])
+            
+                type_progress += 1
+            
+            if callable(self.load_callback):
+                self.anaysis_callback(type_progress, 'Done!', len(type))
+            
+            progress += 1
+        
+        if callable(self.anaysis_callback):
+            self.anaysis_callback(progress, 'Done!', length)
+        
+
+    
+    def check_data_type(self, values : list | set):
+        hierarchy = ['bit', 'int', 'float', 'string']
+        
+        types = [utils.check_type(val) for val in values]
+        
+        is_comma_list = False
+        
+        splits : list[list[str]] = []
+        
+        for type in types:
+            split = type.split()
+            splits.append(split)
+            
+            if split[-1] == '...':
+                is_comma_list = True
+        
+        final_type = []
+        
+        length = max(len(l) for l in splits)
+        
+        length -= is_comma_list
+        
+        for index in range(length):
+            type = 'bit'
+            
+            for val in splits:
+                if len(val) <= index:
+                    continue
+                if val[index] == '...':
+                    continue
+                
+                if hierarchy.index(val[index]) > hierarchy.index(type):
+                    type = val[index]
+            
+            final_type.append(type)
+        
+        if is_comma_list:
+            final_type.append('...')
+        
+        return ' '.join(final_type)
+        
         
     def export_objects(self, output = None):
         if output not in ['', None] and isinstance(output, str):
@@ -480,7 +570,7 @@ class Objects_analysis_gui(tk.Tk):
             def callback(index, name, max):
                 progress['max'] = max
                 progress['value'] = index
-                var.set(name)
+                var.set(f'({index}/{max}) {name}')
                 
                 self.update()
             
@@ -536,10 +626,7 @@ class Objects_analysis_gui(tk.Tk):
                 load_callback = self.progress_bars['loading']['callback'],
                 analysis_callback = self.progress_bars['full']['callback'],
             )
-        except:
-            log_exception()
-        
-        try:
+            
             analysis.start()
         except:
             log_exception()
