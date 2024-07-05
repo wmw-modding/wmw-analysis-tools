@@ -45,11 +45,6 @@ _log_filename = f'logs/{datetime.now().strftime("%m-%d-%y_%H-%M-%S")}.log'
 
 createLogger('file', filename = _log_filename)
 
-def log_exception():
-    fileio = io.StringIO()
-    traceback.print_exc(file = fileio)
-
-    logging.error(fileio.getvalue())
 
 import typing
 import tkinter as tk
@@ -189,7 +184,7 @@ class Object_Analysis():
                 
                 self.analyze_object(obj)
             except:
-                log_exception()
+                logging.exception(f'unable to analyze object {path}')
             
             progress += 1
         
@@ -211,26 +206,35 @@ class Object_Analysis():
             self.analyze_object(obj)
     
     def analyze_object(self, object : wmwpy.classes.Object):
-        if not object.type in self.object_types:
-            self.object_types[object.type] = {}
+        self.object_types.setdefault(object.type, {})
         
-        for property in object.properties:
+        properties = copy.deepcopy(object.defaultProperties)
+        properties.update(copy.deepcopy(object.properties))
+        
+        for property in properties:
             if property == 'Type':
                 continue
             
             new_property = self.check_property(property)
             
-            if ('' in self.object_types) and (new_property in self.object_types['']):
-                self.object_types[''][new_property]['values'].add(object.properties[property])
+            if new_property in self.object_types.setdefault('', {}):
+                self.object_types[''][new_property]['values'].add(properties[property])
+                self.object_types[''][new_property].setdefault('files', set())
+                self.object_types[''][new_property]['files'].add(object.filename)
                 continue
             
-            if not new_property in self.object_types[object.type]:
-                self.object_types[object.type][new_property] = {
+            type_properties = self.object_types[object.type].setdefault(
+                new_property,
+                {
                     'type' : 'any',
-                    'values' : set()
+                    'values' : set(),
+                    'files': set(),
                 }
+            )
             
-            self.object_types[object.type][new_property]['values'].add(str(object.properties[property]))
+            type_properties['values'].add(str(properties[property]))
+            type_properties.setdefault('files', set())
+            type_properties['files'].add(object.filename)
     
     def check_property(self, property):
         split = utils.split_num(property)
@@ -391,8 +395,8 @@ class Objects_analysis_gui(tk.Tk):
             var = tk.StringVar(
                 value = default_value,
             )
-            var.trace(
-                'w',
+            var.trace_add(
+                'write',
                 lambda *args : entry_callback(var.get()),
             )
             
@@ -509,7 +513,7 @@ class Objects_analysis_gui(tk.Tk):
             ),
             row = 3,
         )
-        self.config_widgets['template'] = create_row(
+        self.config_widgets['output'] = create_row(
             self.config_frame,
             label_text = 'Output',
             entry_type = 'text',
@@ -629,7 +633,7 @@ class Objects_analysis_gui(tk.Tk):
             
             analysis.start()
         except:
-            log_exception()
+            logging.exception('analysis error')
         
         self.set_state('enabled')
         self.set_state('enabled', self.config_frame)
