@@ -1,6 +1,6 @@
 # ==================================
 # Created by ego-lay-atman-bay
-# Under the GNU v3 license.
+# Under the GNU GPLv3 license.
 # If used, please give credit
 # 
 # Repository: https://github.com/ego-lay-atman-bay/python-settings
@@ -11,6 +11,7 @@ __author__ = 'ego-lay-atman-bay'
 
 import json
 from copy import deepcopy
+from collections.abc import MutableMapping
 
 class Settings():
     def __init__(
@@ -56,6 +57,16 @@ class Settings():
                             addSettings(settings[setting], default[setting])
                         else:
                             default[setting] = settings[setting]
+                    
+                    # for k, v in default.items():
+                    #     if k in settings:
+                    #         # this next check is the only difference!
+                    #         if all(isinstance(e, MutableMapping) for e in (v, settings[k])):
+                    #             settings[k] = addSettings(settings[k], v)
+                    #         # we could further check types and merge as appropriate here.
+                    # d3 = default.copy()
+                    # d3.update(settings)
+                    # return d3
                 
                 addSettings(settings, this.settings)
             except:
@@ -127,3 +138,6 @@ class Settings():
                 items = settings[value[0]]
             
             return this._get_settings(value[1::], items)
+    
+    def __str__(self) -> str:
+        return json.dumps(self.settings, indent=2)
