@@ -36,6 +36,7 @@ def check_type(value : str):
     }
     
     type = []
+    is_comma_array = False
     
     for key in arrays:
         array = arrays[key]
@@ -44,7 +45,7 @@ def check_type(value : str):
             if key == 'comma':
                 type.append(check_type(values[0]))
             
-                type.append('...')
+                is_comma_array = True
             
             elif key == 'spaced':
                 type = [check_type(val) for val in values]
@@ -72,4 +73,8 @@ def check_type(value : str):
         
         type.append(master_type)
     
-    return ' '.join(type)
+    type = ' '.join(type)
+    if is_comma_array:
+        type += ',...'
+    
+    return type
